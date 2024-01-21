@@ -4,30 +4,25 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>GoItJsHw12</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500&display=swap"
-      rel="stylesheet"
-    />
+    <title>Vanilla App Template</title>
     <link rel="stylesheet" href="./css/styles.css" />
   </head>
   <body>
-    <form class="search-form">
+    <form class="submitForm">
       <input
+        class="submitInput"
         type="text"
-        name="query"
-        autocomplete="off"
+        name="searchQuery"
         placeholder="Search images..."
-        class="search-input"
-        required
       />
-      <button type="submit">Search</button>
+      <button class="submitBtn" type="submit">Search</button>
     </form>
+
     <ul class="gallery"></ul>
-     <span class="loader"></span>
-    <button type="button" class="load-more-btn">Load more</button>
+    <button class="is-hidden loadMore" type="submit">Load More</button>
+
+    <div class="loader is-hidden"></div>
+
     <script type="module" src="./main.js"></script>
   </body>
 </html>
