@@ -4,28 +4,39 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/goit-js-hw-12/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vanilla App Template</title>
+    <title>goit-js-hw-12</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
     
     <script type="module" crossorigin src="/goit-js-hw-12/commonHelpers.js"></script>
-    <link rel="modulepreload" crossorigin href="/goit-js-hw-12/assets/vendor-40038228.js">
+    <link rel="modulepreload" crossorigin href="/goit-js-hw-12/assets/vendor-bad0427b.js">
     <link rel="stylesheet" href="/goit-js-hw-12/assets/vendor-eb6030bc.css">
-    <link rel="stylesheet" href="/goit-js-hw-12/assets/index-8fadfa1f.css">
+    <link rel="stylesheet" href="/goit-js-hw-12/assets/index-8e241f4d.css">
   </head>
   <body>
-    <form class="submitForm">
+    <form class="picture-search-form">
       <input
-        class="submitInput"
+        class="picture-search-name"
         type="text"
-        name="searchQuery"
+        name="picture-search"
         placeholder="Search images..."
       />
-      <button class="submitBtn" type="submit">Search</button>
+      <button class="picture-search-button button">Search</button>
     </form>
 
-    <ul class="gallery"></ul>
-    <button class="is-hidden loadMore" type="submit">Load More</button>
+    <div class="loader-container">
+      <span class="loader"></span>
+    </div>
 
-    <div class="loader is-hidden"></div>
+    <div class="gallery"></div>
+
+    <button class="load-more-button button" type="button" style="display: none">
+      Load more
+    </button>
 
     
   </body>
