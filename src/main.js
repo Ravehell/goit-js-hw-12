@@ -4,144 +4,230 @@ import SimpleLightbox from "simplelightbox";
 import "simplelightbox/dist/simple-lightbox.min.css";
 import axios from 'axios';
 
-function showNotificationError(message) {
-    iziToast.error({
-    message: message,
-    position: 'topRight',
-    timeout: 2000,
-    close: false,
-    overlay: false,
-    displayMode: 'once',
-    color: '#EF4040',
-    messageColor: '#FFFFFF',
-    messageSize: '16px',
-    iconColor: '#FFFFFF',
-    theme: 'dark',
-    messageLineHeight: '24px',
-    });
-}
-
-const API_KEY = '38212376-ffcb529addc704f756c0c7d48';
-const BASE_URL = `https://pixabay.com/api/?key=${API_KEY}&image_type=photo&orientation=horizontal&safesearch=true`;
-axios.defaults.baseURL = BASE_URL;
-
-const form = document.querySelector('.search-form');
-const input = document.querySelector('.search-input');
-const gallery = document.querySelector('.gallery');
-const loader = document.querySelector('.loader');
-const loadMoreBtn = document.querySelector('.load-more-btn');
-
-const perPage = 40;
-let page = 1;
-
+const apiKey = "41734083-bc7e7acddd543bb8e35e20b9d";
+const searchForm = document.getElementById("search-form");
+const searchInput = document.getElementById("search-input");
+const galleryContainer = document.getElementById("gallery");
+const loader = document.getElementById("loader");
+const loadMoreBtn = document.getElementById("load-more-btn");
 const lightbox = new SimpleLightbox('.gallery a', {
-    captionsData: 'alt',
-    captionDelay: 250,
-    captionPosition: 'bottom',
-    captionClass: 'caption-style',
-    close: true,
-    closeText: '×',
-    fadeSpeed: 250,
-    animationSpeed: 250,
-},);
+  captionsData: 'alt',
+  captionDelay: 250,
+});
 
+let currentPage = 1; // Initial page value
+let currentQuery = ""; // Store the current user input
+let totalHits = 0;
+let cardHeight = 0; // Variable to store the height of one gallery card
 
-form.addEventListener('submit', onSearch);
+searchForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
 
-loadMoreBtn.addEventListener('click', onLoadMore);
+  // Очистіть вміст галереї при новому пошуковому запиті
+  galleryContainer.innerHTML = "";
 
-function onSearch(e) { 
-    e.preventDefault();
-    gallery.innerHTML = '';
-    loader.classList.add('loader-show');
-    page = 1;
-    const searchQuery = input.value;
-    searchImages(searchQuery);
+  const query = searchInput.value.trim();
+
+  if (!query) {
+    iziToast.error({
+      title: "Error",
+      message: "Please enter a search query.",
+      position: "topRight",
+    });
+    return;
+  }
+
+  // Reset current page number on a new search
+  currentPage = 1;
+
+  // Store the current user input
+  currentQuery = query;
+
+  // Show loader with a message
+loader.style.display = "block";
+loader.textContent = "Loading images, please wait...";
+
+try {
+    const response = await axios.get(`https://pixabay.com/api/`, {
+    params: {
+      key: apiKey,
+      q: currentQuery,
+      image_type: "photo",
+      orientation: "horizontal",
+      safesearch: true,
+      page: currentPage,
+      per_page: 40,
+    },
+  });
+
+  const data = response.data;
+
+  if (data.hits && data.hits.length > 0) {
+    totalHits = data.totalHits; // Update totalHits
+    const images = data.hits.map((hit) => ({
+      url: hit.webformatURL,
+      alt: hit.tags,
+      largeUrl: hit.largeImageURL,
+      likes: hit.likes,
+      views: hit.views,
+      comments: hit.comments,
+      downloads: hit.downloads,
+    }));
+
+    // Вимкніть кнопку "Load more" при новому пошуковому запиті
+    loadMoreBtn.style.display = "none";
+
+    // Get the height of one gallery card
+    const firstCard = createGalleryCard(images[0]);
+    galleryContainer.appendChild(firstCard);
+    cardHeight = firstCard.getBoundingClientRect().height;
+
+    updateGallery(images);
+  } else {
+    iziToast.info({
+      title: "Info",
+      message: "Sorry, there are no images matching your search query. Please try again!",
+      position: "topRight",
+    });
+  }
+} catch (error) {
+  console.error("Error fetching data:", error);
+  iziToast.error({
+    title: "Error",
+    message: "An error occurred while fetching data. Please try again later.",
+    position: "topRight",
+  });
+} finally {
+  // Hide the loader once the images are loaded or an error occurs
+  loader.textContent = ""; // Clear loader text
+  loader.style.display = "none";
+
+  // Show/hide the "Load more" button based on totalHits and current gallery items
+  toggleLoadMoreButton();
 }
+});
 
-function onLoadMore() {
-    loadMoreBtn.classList.remove('load-more-btn-show');
-    loader.classList.add('loader-show');
-    const searchQuery = input.value;
-    searchMoreImages(searchQuery);
-}
+loadMoreBtn.addEventListener("click", async () => {
+  // Show loader with a message for "Load more" button click
+  loader.textContent = "Loading more images, please wait...";
+  loader.style.display = "block";
 
-async function searchMoreImages(searchQuery) { 
-        const url = `&q=${searchQuery}&per_page=${perPage}&page=${page}`;
-        return await axios.get(url)
-            .then(response => {
-                const totalHits = response.data.totalHits;
-                const totalPage = Math.ceil(totalHits / perPage);
-                if (page > totalPage) {
-                    showNotificationError("We're sorry, but you've reached the end of search results.");
-                    loader.classList.remove('loader-show');
-                    lightbox.refresh();
-                } else {
-                    page = page + 1;
-                    const markup = createGalleryMarkup(response.data.hits);
-                    gallery.insertAdjacentHTML('beforeend', markup);
-                    loader.classList.remove('loader-show');
-                    loadMoreBtn.classList.add('load-more-btn-show');
-                    const photoCard = document.querySelector('.photo-card');
-                    const photoCardHeight = photoCard.getBoundingClientRect().height;
-                    window.scrollBy({
-                        top: photoCardHeight * 2,
-                        behavior: 'smooth',
-                    });
-                    lightbox.refresh();
-                }
+  try {
+    const response = await axios.get(`https://pixabay.com/api/`, {
+      params: {
+        key: apiKey,
+        q: currentQuery,
+        image_type: "photo",
+        orientation: "horizontal",
+        safesearch: true,
+        page: currentPage,
+        per_page: 40,
+      },
+    });
 
-            })
-            .catch(error => console.log(error));
-}
+    const data = response.data;
 
-async function searchImages(searchQuery) { 
+    if (data.hits && data.hits.length > 0) {
+      totalHits = data.totalHits; // Update totalHits
+      const images = data.hits.map((hit) => ({
+        url: hit.webformatURL,
+        alt: hit.tags,
+        largeUrl: hit.largeImageURL,
+        likes: hit.likes,
+        views: hit.views,
+        comments: hit.comments,
+        downloads: hit.downloads,
+      }));
+
+      updateGallery(images);
+    } else {
+      iziToast.info({
+        title: "Info",
+        message: "No more images to load.",
+        position: "topRight",
+      });
+    }
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    iziToast.error({
+      title: "Error",
+      message: "An error occurred while fetching data. Please try again later.",
+      position: "topRight",
+    });
+  } finally {
+    loader.textContent = ""; // Set loader text to an empty string
+    loader.style.display = "none"; // Hide the loader once the images are loaded
+
     
-    const url = `&q=${searchQuery}&per_page=${perPage}&page=${page}`;
-    
-    return await axios.get(url)
-        .then(response => {
-            if (response.data.hits.length === 0) {
-                showNotificationError('Sorry, there are no images matching your search query. Please try again!');
-                loader.classList.remove('loader-show');
-            } else {
-                page = page + 1;
-                const markup = createGalleryMarkup(response.data.hits);
-                gallery.insertAdjacentHTML('beforeend', markup);
-                loader.classList.remove('loader-show');
-                loadMoreBtn.classList.add('load-more-btn-show');
-                lightbox.refresh();
-            }
-        })
-        .catch(error => console.log(error));
+    // Smoothly scroll to the next set of images
+    window.scrollBy({
+      top: cardHeight * 2, // Scroll by twice the height of one card
+      behavior: 'smooth',
+    });
+
+    // Show/hide the "Load more" button based on totalHits and current gallery items
+    toggleLoadMoreButton();
+  }
+});
+
+   function scrollToNextSetOfImages() {
+  // Smoothly scroll to the next set of images
+  window.scrollBy({
+    top: cardHeight * 2, // Scroll by twice the height of one card
+    behavior: 'smooth',
+  });
 }
 
-function createGalleryMarkup(images) { 
-    return images.map(({ webformatURL, largeImageURL, tags, likes, views, comments, downloads, user }) => {
-        return `
-        <li class="photo-card">
-            <a href="${largeImageURL}" class="gallery__item">
-                <img src="${webformatURL}" alt="Author: ${user}, tags: ${tags}" class="gallery__image" />
-            </a>
-            <div class="info">
-                <p class="info-item">
-                    <b>Likes</b>
-                    <span>${likes}</span>
-                </p>
-                <p class="info-item">
-                    <b>Views</b>
-                    <span>${views}</span>
-                </p>
-                <p class="info-item">
-                    <b>Comments</b>
-                    <span>${comments}</span>
-                </p>
-                <p class="info-item">
-                    <b>Downloads</b>
-                    <span>${downloads}</span>
-                </p>
-            </div>
-        </li>
-        `;
-    }).join('');
+
+function updateGallery(images) {
+  // Append new images to the gallery
+  const galleryMarkup = images
+    .map(
+      (image) => `
+        <a href="${image.largeUrl}" data-lightbox="gallery" data-title="Likes: ${image.likes}, Views: ${image.views}, Comments: ${image.comments}, Downloads: ${image.downloads}">
+          <img src="${image.url}" alt="${image.alt}" />
+        </a>
+      `
+    )
+    .join('');
+
+  // Use insertAdjacentHTML to append new content without destroying existing elements
+  galleryContainer.insertAdjacentHTML('beforeend', galleryMarkup);
+
+  // Refresh the lightbox after updating the gallery
+  lightbox.refresh();
+
+  // Show/hide the "Load more" button based on totalHits and current gallery items
+  toggleLoadMoreButton();
+}
+
+function toggleLoadMoreButton() {
+  // Show/hide the "Load more" button based on totalHits and current gallery items
+  if (totalHits > galleryContainer.children.length) {
+    loadMoreBtn.style.display = "block";
+  } else {
+    loadMoreBtn.style.display = "none";
+
+    // Display a message when the user reaches the end of search results
+if (galleryContainer.children.length > 0 && currentPage > 1 && totalHits === galleryContainer.children.length) {
+  iziToast.info({
+    title: "Info",
+    message: "We're sorry, but you've reached the end of search results.",
+    position: "topRight",
+  });
+}
+  }
+}
+
+// Function to create a gallery card element
+function createGalleryCard(image) {
+  const card = document.createElement("div");
+  card.classList.add("gallery-card");
+
+  const img = document.createElement("img");
+  img.src = image.url;
+  img.alt = image.alt;
+
+  card.appendChild(img);
+  return card;
 }
